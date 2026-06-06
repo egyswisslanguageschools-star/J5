@@ -352,15 +352,24 @@
 
         function initSystem() {
             rankedStudents = studentsData.slice().sort(function(a,b){ return b.total - a.total; });
+            // Round total to 1 decimal for ranking purposes
             for (var i = 0; i < rankedStudents.length; i++) {
-                if (i === 0) {
-                    rankedStudents[i].rank = 1;
-                } else if (rankedStudents[i].total === 0) {
+                rankedStudents[i].totalRounded = Math.round(rankedStudents[i].total * 10) / 10;
+            }
+            // Re-sort by rounded total
+            rankedStudents.sort(function(a,b){ return b.totalRounded - a.totalRounded; });
+            // Build distinct rounded score levels (excluding 0)
+            var distinctScores = [];
+            for (var i = 0; i < rankedStudents.length; i++) {
+                var t = rankedStudents[i].totalRounded;
+                if (t > 0 && distinctScores.indexOf(t) === -1) distinctScores.push(t);
+            }
+            distinctScores.sort(function(a,b){ return b - a; });
+            for (var i = 0; i < rankedStudents.length; i++) {
+                if (rankedStudents[i].totalRounded === 0) {
                     rankedStudents[i].rank = 999;
-                } else if (rankedStudents[i].total === rankedStudents[i-1].total) {
-                    rankedStudents[i].rank = rankedStudents[i-1].rank;
                 } else {
-                    rankedStudents[i].rank = rankedStudents[i-1].rank + 1;
+                    rankedStudents[i].rank = distinctScores.indexOf(rankedStudents[i].totalRounded) + 1;
                 }
             }
             renderLeaderboard();
@@ -449,7 +458,7 @@
             document.getElementById('res-name').textContent = s.name;
             document.getElementById('res-id').textContent   = 'ID: ' + s.id;
             document.getElementById('res-rank').textContent = '#' + s.rank;
-            document.getElementById('res-total').textContent     = fmt(s.total);
+            document.getElementById('res-total').textContent     = fmt(s.totalRounded);
             document.getElementById('res-percentage').textContent = pct.toFixed(1);
 
             var statusBadge   = document.getElementById('status-badge');
